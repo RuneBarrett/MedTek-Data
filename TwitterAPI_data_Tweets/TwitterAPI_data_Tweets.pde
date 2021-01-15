@@ -26,7 +26,7 @@ public void setup()
   output = createWriter("tweetData.sql"); 
   db = new SQLite( this, "../tweets1.db" );
   long t_id;
-  int count = 1; //dont change
+  int count = 1; 
   id_string_lists = new ArrayList<String>();
   bearer = loadStrings("../secrets.txt")[0];
 
