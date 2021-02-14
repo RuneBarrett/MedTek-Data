@@ -4,14 +4,16 @@
 ArrayList<String> processTweets() {
   println("\nCreating tweet requests..");
   //################ Request Settings
-  String e_fields = "attachments.media_keys";//"referenced_tweets.id,entities.mentions.username"; //expansion fields (mentioned/referenced/reply etc.)
-  String t_fields = "text,created_at,author_id,in_reply_to_user_id,attachments,public_metrics,entities"; //tweet fields
-  String u_fields = "name,description"; //user fields
-  String m_fields = "duration_ms,media_key,preview_image_url,public_metrics,type,url"; //media fields  
+  String e_fields = "attachments.media_keys&media.fields=preview_image_url,url";//"attachments.media_keys,referenced_tweets.id,author_id";//"attachments.media_keys";//"referenced_tweets.id,entities.mentions.username"; //expansion fields (mentioned/referenced/reply etc.)
+  String t_fields = "public_metrics";//"entities, media"; //tweet fields
+  String u_fields = "";//"name,description"; //user fields
+  String m_fields = "public_metrics";//"duration_ms,height,media_key,preview_image_url,public_metrics,type,url,width";//"duration_ms,media_key,preview_image_url,public_metrics,type,url"; //media fields  
+  
+  output = createWriter("data/tweet_metrics.sql");
+  output2 = createWriter("data/tweet_img.sql");
 
   //setup
   id_string_lists = new ArrayList<String>();
-  output = createWriter("data/tweetData.sql"); 
   //db = new SQLite( this, db_path);
   long t_id;
   int count = 1;
@@ -59,14 +61,16 @@ ArrayList<String> processTweets() {
       request+= "&expansions="+e_fields;
     if (t_fields != "")
       request+="&tweet.fields="+t_fields;
-    if (u_fields != "")
-      request+="&user.fields="+u_fields;
-    if (m_fields != "")
-      request+="&media.fields="+m_fields;
+    //if (u_fields != "")
+    //  request+="&user.fields="+u_fields;
+    //if (m_fields != "")
+    //  request+="&expansions=attachments.media_keys&media.fields="+m_fields;
+    //request+="&tweet_mode=extended";
+    //request+= "&tweet.fields=created_at&expansions=author_id,attachments.media_keys&media.fields=media_key,type,url&user.fields=profile_image_url";
     requests.add(request);
     //send request
     //GetRequest get = sendTAPIRequest(endpoint+s+"&expansions=author_id&tweet.fields="+t_fields+"&user.fields="+u_fields);
-    //println("request "+counter+": "+request);
+    println("request "+counter+": "+request);
     //GetRequest get = sendTAPIRequest(request);
     //println(get.getContent());
     counter++;

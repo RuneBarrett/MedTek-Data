@@ -7,6 +7,7 @@ SQLite db;
 String db_path = "../tweets1.db";
 String secrets_path ="../secrets.txt";
 PrintWriter output;
+PrintWriter output2;
 
 //GUI Controls
 boolean running = false;
@@ -19,10 +20,10 @@ String status = "Pick an endpoint";
 String infoText = "Select a type below and click go";
 
 //API Controls
-int numRequests = 500; 
+int numRequests = 3000; 
 boolean runAll = true;
 boolean useDelay = true;
-int delayAmount = 2500;
+int delayAmount = 2900;
 String endpoint = "";
 
 //API Vars
@@ -78,8 +79,16 @@ public void draw() {
   if (processingRequests && requests.size() > 0) {
     GetRequest get = sendTAPIRequest(requests.get(0));
     println("Processed "+(progress_lim-requests.size()+1) +" requests in "+printTime()+". "+get.getContent().length());
+
+    //Save json response for testing wo worrying about request limits
     //saveJSONObject(parseJSONObject(get.getContent()), "data/new"+(progress_lim-requests.size()+1)+".json");
-    parseJSONandSavetoSQL_User(get);
+
+    if (currentType.equals("user"))
+      parseJSONandSavetoSQL_User(get);
+    if (currentType.equals("tweet"))
+      parseJSONandSavetoSQL_Tweet(get);
+
+
     requests.remove(0);
     if (useDelay)whileDelay(delayAmount);
     progress++;
@@ -90,6 +99,10 @@ public void draw() {
     infoText = "Done in "+printTime();
     output.flush(); // Writes the remaining data to the file
     output.close();
+    if(currentType.equals("tweet")){
+    output2.flush(); // Writes the remaining data to the file
+    output2.close();
+  }
     background(0);
   }
   //#Handle users
@@ -145,7 +158,7 @@ void parseJSONandSavetoSQL_User(GetRequest get) {
 
     output.println("INSERT INTO user1 VALUES ("
       +"'"+user_obj.getString("username") +"', "
-      +u_metrics_obj.getInt("tweet_count")+", "
+      //+u_metrics_obj.getInt("tweet_count")+", "
       +u_metrics_obj.getInt("following_count")+", "
       +u_metrics_obj.getInt("followers_count")+", "
       +u_metrics_obj.getInt("listed_count")+", "
@@ -155,5 +168,51 @@ void parseJSONandSavetoSQL_User(GetRequest get) {
       +"'"+user_obj.getString("description").replaceAll("'", "''").replaceAll("\\r\\n|\\r|\\n", " ")+"',"
       +"'"+user_obj.getString("profile_image_url")+"');"
       );
+  }
+}
+
+void parseJSONandSavetoSQL_Tweet(GetRequest get) {
+  ////Get the array containing users
+  //JSONArray tweet_objects = parseJSONObject(get.getContent()).getJSONArray("data");
+  //JSONArray tweet_media_objects = parseJSONObject(get.getContent()).getJSONObject("includes").getJSONArray("media");
+
+  //for (int i = 0; i < tweet_objects.size(); i++) {
+  //  JSONObject tweet_obj = tweet_objects.getJSONObject(i);
+  //  JSONObject t_metrics_obj = tweet_obj.getJSONObject("public_metrics");
+
+  //  output.println("INSERT INTO Image VALUES ("
+  //    //+"'"+user_obj.getString("username") +"', "
+
+  //    );
+  //}
+
+  //Get the array containing users
+  JSONArray tweet_objects = parseJSONObject(get.getContent()).getJSONArray("data");
+  JSONArray tweet_media_objects = parseJSONObject(get.getContent()).getJSONObject("includes").getJSONArray("media");
+
+  for (int i = 0; i < tweet_objects.size(); i++) {
+    JSONObject tweet_obj = tweet_objects.getJSONObject(i);
+    JSONObject t_metrics_obj = tweet_obj.getJSONObject("public_metrics");
+
+    output.println("INSERT INTO tweet_metrics VALUES ("
+      +"'"+tweet_obj.getString("id") +"', "
+      +"'"+t_metrics_obj.getInt("like_count") +"', "
+      +"'"+t_metrics_obj.getInt("reply_count") +"', "
+      +"'"+t_metrics_obj.getInt("quote_count") +"', "
+      +"'"+t_metrics_obj.getInt("retweet_count") +"'); "
+      );
+
+    JSONObject t_attachments_obj = tweet_obj.getJSONObject("attachments");
+    if (t_attachments_obj != null) {
+      String media_key = (String)t_attachments_obj.getJSONArray("media_keys").get(0);//getString("media_keys");
+      //println("tobj", media_key);
+      //println(tweet_media_objects.getJSONObject(0).getString("media_key"));
+      for (int j = 0; j < tweet_media_objects.size(); j++) {
+        if (tweet_media_objects.getJSONObject(j).getString("media_key").equals(media_key))
+          output2.println("INSERT INTO image VALUES ("
+            +"'"+tweet_obj.getString("id")+"', "
+            +"'"+tweet_media_objects.getJSONObject(j).getString("url")+"');");
+      }
+    }
   }
 }
