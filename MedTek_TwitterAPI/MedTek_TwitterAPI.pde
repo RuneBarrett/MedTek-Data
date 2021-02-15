@@ -20,17 +20,17 @@ String status = "Pick an endpoint";
 String infoText = "Select a type below and click go";
 
 //API Controls
-int numRequests = 3000; 
+int numRequests = 3000000; 
 boolean runAll = true;
 boolean useDelay = true;
-int delayAmount = 2900;
+int delayAmount = 3000;
 String endpoint = "";
 
 //API Vars
 ArrayList<String> id_string_lists;
 String bearer;
 ArrayList<String> requests;
-String tweetQuery = "select distinct id from tweet order by id";
+String tweetQuery = "select distinct id from tweet";
 String userQuery = "select distinct user from user";
 
 //debug
@@ -82,6 +82,8 @@ public void draw() {
 
     //Save json response for testing wo worrying about request limits
     //saveJSONObject(parseJSONObject(get.getContent()), "data/new"+(progress_lim-requests.size()+1)+".json");
+    saveJSONObject(parseJSONObject(get.getContent()), "data/response"+".json");
+
 
     if (currentType.equals("user"))
       parseJSONandSavetoSQL_User(get);
@@ -99,10 +101,10 @@ public void draw() {
     infoText = "Done in "+printTime();
     output.flush(); // Writes the remaining data to the file
     output.close();
-    if(currentType.equals("tweet")){
-    output2.flush(); // Writes the remaining data to the file
-    output2.close();
-  }
+    if (currentType.equals("tweet")) {
+      output2.flush(); // Writes the remaining data to the file
+      output2.close();
+    }
     background(0);
   }
   //#Handle users
@@ -188,7 +190,11 @@ void parseJSONandSavetoSQL_Tweet(GetRequest get) {
 
   //Get the array containing users
   JSONArray tweet_objects = parseJSONObject(get.getContent()).getJSONArray("data");
-  JSONArray tweet_media_objects = parseJSONObject(get.getContent()).getJSONObject("includes").getJSONArray("media");
+  JSONArray tweet_media_objects;
+  if (parseJSONObject(get.getContent()).getJSONObject("includes") != null)
+    tweet_media_objects = parseJSONObject(get.getContent()).getJSONObject("includes").getJSONArray("media");
+  else 
+    tweet_media_objects = null;
 
   for (int i = 0; i < tweet_objects.size(); i++) {
     JSONObject tweet_obj = tweet_objects.getJSONObject(i);
@@ -203,7 +209,7 @@ void parseJSONandSavetoSQL_Tweet(GetRequest get) {
       );
 
     JSONObject t_attachments_obj = tweet_obj.getJSONObject("attachments");
-    if (t_attachments_obj != null) {
+    if (t_attachments_obj != null && tweet_media_objects != null) {
       String media_key = (String)t_attachments_obj.getJSONArray("media_keys").get(0);//getString("media_keys");
       //println("tobj", media_key);
       //println(tweet_media_objects.getJSONObject(0).getString("media_key"));
